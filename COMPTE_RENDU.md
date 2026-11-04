@@ -87,4 +87,10 @@ async function appelerApi(livraison, cle) {
 4. **`curl` fonctionne alors que la page du port 5501 est bloquée** : la politique CORS est appliquée par le navigateur, pas par le serveur. `curl` est un outil en ligne de commande qui n'est pas un navigateur et n'applique pas ces restrictions.
 5. **La validation côté navigateur ne remplace pas celle de l'API** : la validation HTML/JS peut être contournée (DevTools, Postman, curl…). L'API est l'unique point d'entrée de confiance ; elle doit valider elle-même toutes les données, indépendamment du client.
 
-## 6. Lien de la pull request
+## 6. Pull request et rendu
+
+- **Pull request :** [#1 — TP sécurité : tests, clé API, page web](https://github.com/joshBM7/TP-2/pull/1)
+- **État :** relue et fusionnée dans `main` le 4 novembre 2026.
+- **Tag de rendu :** `tp2`, placé sur le commit de fusion `31eb37d`.
+- **Vérification finale :** `python -m pytest` — 51 tests réussis.
+- Le fichier `.env`, qui contient les clés locales, est ignoré par Git et n'est pas suivi dans le dépôt.
