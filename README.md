@@ -7,9 +7,12 @@ Suite du TP précédent : l'API LogiAI existe. Aujourd'hui vous la testez pour l
     python -m venv .venv
     .venv\Scripts\activate.bat        # Windows cmd  (PowerShell : .venv\Scripts\Activate.ps1)
     source .venv/bin/activate         # macOS / Linux
-    pip install -r requirements.txt
+    pip install -e ".[api,dev]"
     python -m logiai.dataset
     python -m logiai.train
+
+L'installation éditable rend le package `logiai` importable depuis l'environnement.
+`requirements.txt` contient les versions verrouillées utilisées par l'image Docker.
 
 ## Vos clés (fichier .env, jamais dans Git)
 
@@ -25,6 +28,53 @@ Suite du TP précédent : l'API LogiAI existe. Aujourd'hui vous la testez pour l
 ## Tester
 
     python -m pytest
+
+## Utiliser le package et sa commande
+
+Après l'installation éditable, `logiai-predict` prend le chemin d'un fichier JSON :
+
+```powershell
+logiai-predict livraison.json
+```
+
+La commande affiche une probabilité arrondie et l'état d'alerte. Elle ne
+remplace pas la validation Pydantic de l'API. Les données et le modèle sont
+recherchés sous `LOGIAI_HOME` (par défaut : le dossier courant) ; définissez
+cette variable vers la racine du projet si la commande est lancée depuis un
+autre dossier.
+
+## Construire et installer un wheel
+
+Depuis la racine du dépôt :
+
+```powershell
+python -m pip wheel --no-deps --wheel-dir dist .
+python -m pip install dist\logiai-0.1.0-py3-none-any.whl
+```
+
+Le wheel ne contient pas les données ni un modèle entraîné. Le poste destinataire
+doit donc disposer d'un environnement Python compatible et installer les
+dépendances déclarées par le package. Pour réutiliser un modèle déjà entraîné,
+installez aussi les versions exactes de `requirements.txt` afin d'éviter les
+incompatibilités de sérialisation scikit-learn.
+
+## Construire et lancer l'image Docker et Nginx
+
+L'image installe LogiAI, fabrique un jeu de données synthétique et entraîne un
+modèle au build. Les données d'exemple ne contiennent aucune clé API. Depuis la
+racine du dépôt :
+
+```powershell
+docker compose up -d --build
+docker compose ps
+docker compose exec api python -c "import logiai; print(logiai.__file__)"
+```
+
+L'API est disponible sur le port 8000 et la page Nginx sur
+`http://localhost:8080`. L'API installe le package depuis une zone temporaire,
+puis supprime les sources de build. Elle génère un modèle synthétique
+démonstratif sous `/app/models`; l'image s'exécute avec un utilisateur non-root.
+Pour une image de production, remplacez ce modèle par un modèle métier validé.
 
 ## Tester une prédiction avec curl sous PowerShell
 
@@ -53,3 +103,5 @@ dans PowerShell. Gardez la clé dans `.env` et ne la publiez pas.
 - La page web envoie la prédiction, affiche les erreurs de validation et
   réactive le bouton après la requête.
 - Les décisions de sécurité sont documentées dans `docs/adr/003-securite.md`.
+- Les décisions de packaging sont documentées dans
+  `docs/adr/005-packaging.md` et l'étude dans `docs/etude-de-conception.md`.
