@@ -94,3 +94,54 @@ async function appelerApi(livraison, cle) {
 - **Tag de rendu :** `tp2`, placé sur le commit de fusion `31eb37d`.
 - **Vérification finale :** `python -m pytest` — 51 tests réussis.
 - Le fichier `.env`, qui contient les clés locales, est ignoré par Git et n'est pas suivi dans le dépôt.
+
+## 7. Atelier 6 : package, commande et image Docker
+
+### Étape 1 — Constat
+
+- Prévision avant test : depuis la racine du dépôt, `import logiai` devrait
+  afficher le chemin du package ; depuis son dossier parent, un Python sans
+  installation du package devrait lever `ModuleNotFoundError`.
+- Résultat du test isolé (`python -S`, sans chargement des packages installés) :
+  import local depuis le dépôt, puis `ModuleNotFoundError` depuis le parent.
+- **Pour utiliser LogiAI, mon collègue doit installer le package et ses
+  dépendances, puis disposer des données et du modèle ou les générer.**
+
+### Étape 4 — Commande et entrée hors limites
+
+- `logiai-predict livraison.json` affiche une probabilité arrondie et l'état
+  d'alerte.
+- Avec `pluie_mm: 500`, la commande CLI affiche une prédiction : elle appelle
+  directement le modèle et ne réalise pas la validation Pydantic de l'API.
+  L'API répond **422**, car son schéma limite `pluie_mm` à 100 mm. La validation
+  de l'API reste donc plus stricte que la commande.
+
+### Étape 5 — Wheel et collègue
+
+- Wheel produit : `dist/logiai-0.1.0-py3-none-any.whl`. Il contient le package
+  `logiai/`, mais ni `models/`, ni `data/`, ni `tests/`, ni `.env`.
+- Le wheel a été installé dans un venv neuf. Depuis un dossier externe sans
+  `LOGIAI_HOME`, la commande répond « Modèle ou données introuvables » (le
+  dataset nécessaire à l'entraînement n'est pas dans le wheel).
+- Avec `LOGIAI_HOME` défini vers la racine du dépôt, elle affiche la prédiction
+  à partir des données et du modèle déjà présents. Le premier essai a montré
+  `InconsistentVersionWarning` : le modèle local et scikit-learn de
+  l'environnement du wheel n'avaient pas la même version. `requirements.txt`
+  épingle scikit-learn 1.9.1 ; après alignement de la version, la prédiction
+  fonctionne sans cet avertissement.
+
+### Étape 6 — Docker Compose
+
+- `docker compose ps` : les services API et web démarrent et l'API est healthy.
+- Dans le conteneur, `logiai.__file__` pointe sous
+  `/usr/local/lib/python3.12/site-packages/logiai/`. `/app` contient les
+  répertoires `data/` et `models/`, sans copie du dossier source `logiai/`.
+- La page servie par Nginx est accessible sur le port 8080 et l'API sur le
+  port 8000. L'API continue d'exiger la clé pour `/v1/predict`.
+
+### Étape 7 — Livrables
+
+- ADR : `docs/adr/005-packaging.md`.
+- Étude de conception : `docs/etude-de-conception.md` (section architecture
+  renseignée).
+- La pull request et le push ne sont pas effectués depuis cette session.
